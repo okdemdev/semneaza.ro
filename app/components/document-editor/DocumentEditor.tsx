@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Signature, Type, Stamp } from 'lucide-react';
+import { Upload, Signature, Type, Stamp, PenLine } from 'lucide-react';
 
 interface DocumentEditorProps {
   onSave: (formData: FormData) => Promise<void>;
@@ -13,6 +13,8 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [emails, setEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
+  const [documentName, setDocumentName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -20,6 +22,8 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPdfUrl(url);
+      // Set initial document name from file name, removing .pdf extension
+      setDocumentName(file.name.replace(/\.pdf$/i, ''));
     } else {
       alert('Please select a PDF file');
     }
@@ -43,8 +47,15 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
     const formData = new FormData();
     formData.append('file', selectedFile);
     formData.append('emails', JSON.stringify(emails));
+    formData.append('title', documentName);
 
     await onSave(formData);
+  };
+
+  const handleNameChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditingName(false);
+    }
   };
 
   return (
@@ -127,7 +138,29 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
           <div className="flex-1 flex flex-col">
             {/* Top Bar */}
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center">
-              <h1 className="text-xl font-semibold">Document Editor</h1>
+              <div className="flex items-center gap-2">
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    onBlur={() => setIsEditingName(false)}
+                    onKeyDown={handleNameChange}
+                    className="text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    autoFocus
+                  />
+                ) : (
+                  <h1 className="text-xl font-semibold flex items-center gap-2">
+                    {documentName}
+                    <button
+                      onClick={() => setIsEditingName(true)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <PenLine className="h-4 w-4" />
+                    </button>
+                  </h1>
+                )}
+              </div>
               <Button onClick={handleSubmit}>Send and Save</Button>
             </div>
 

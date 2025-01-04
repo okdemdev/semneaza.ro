@@ -9,16 +9,18 @@ export default async function CreateDocumentPage({ params }: { params: { folderI
     'use server';
 
     const user = await requireUser();
-    const title = formData.get('file')?.toString() || '';
+    const title = formData.get('title')?.toString() || '';
     const emails = JSON.parse(formData.get('emails')?.toString() || '[]');
 
     // For now, we'll just use the first email in the list
     const email = emails[0] || '';
 
-    // TODO: Handle file upload to storage service
-    // For now, we're just storing the filename
+    // Create the document with the title and email
+    const document = await createDocument(user.id, params.folderId, {
+      title,
+      email,
+    });
 
-    await createDocument(user.id, params.folderId, { title, email });
     redirect(`/dashboard/folders/${params.folderId}`);
   }
 
