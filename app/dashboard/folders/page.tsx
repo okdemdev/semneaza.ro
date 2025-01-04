@@ -34,8 +34,10 @@ export default async function FoldersPage() {
               key={folder.id}
               className="border rounded-lg p-4 hover:shadow-md transition-shadow"
             >
-              <h2 className="text-xl font-semibold mb-2">{folder.name}</h2>
-              <p className="text-gray-600">{folder.description}</p>
+              <Link href={`/dashboard/folders/${folder.id}`} className="block">
+                <h2 className="text-xl font-semibold mb-2 hover:text-indigo-600">{folder.name}</h2>
+                <p className="text-gray-600">{folder.description}</p>
+              </Link>
               <div className="mt-4 flex justify-between items-center">
                 <span className="text-sm text-gray-500">
                   Created {new Date(folder.createdAt).toLocaleDateString()}

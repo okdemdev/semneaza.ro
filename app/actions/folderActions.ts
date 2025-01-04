@@ -54,3 +54,19 @@ export async function deleteFolder(folderId: string, userId: string) {
   await Folder.deleteOne({ id: folderId });
   return { success: true };
 }
+
+export async function getFolder(folderId: string, userId: string) {
+  await dbConnect();
+
+  const user = await User.findOne({ id: userId });
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const folder = await Folder.findOne({ id: folderId, user: user._id });
+  if (!folder) {
+    throw new Error('Folder not found or access denied');
+  }
+
+  return folder;
+}
