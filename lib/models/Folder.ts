@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 
 const folderSchema = new mongoose.Schema({
   id: {
@@ -18,7 +18,6 @@ const folderSchema = new mongoose.Schema({
   },
 
   user: {
-    // Reference to the User model
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
@@ -35,6 +34,11 @@ const folderSchema = new mongoose.Schema({
   },
 });
 
-export const Folder = mongoose.models.Folder || mongoose.model('Folder', folderSchema);
+let Folder: Model<any>;
+try {
+  Folder = mongoose.model('Folder');
+} catch {
+  Folder = mongoose.model('Folder', folderSchema);
+}
 
 export default Folder;

@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { deleteDocument } from '@/app/actions/documentActions';
+import { useRouter } from 'next/navigation';
 
 type DocumentStatus = 'in_progress' | 'signed';
 
@@ -39,14 +41,16 @@ interface Folder {
 interface FolderDocumentsTableProps {
   folder: Folder;
   documents: Document[];
+  userId: string;
 }
 
 interface DocumentDetailsProps {
   document: Document;
   onClose: () => void;
+  onDelete: (documentId: string) => Promise<void>;
 }
 
-function DocumentDetails({ document, onClose }: DocumentDetailsProps) {
+function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) {
   return (
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
@@ -87,7 +91,14 @@ function DocumentDetails({ document, onClose }: DocumentDetailsProps) {
         </div>
       </div>
       <div className="flex justify-between mt-4">
-        <Button variant="destructive" className="flex items-center gap-2">
+        <Button
+          variant="destructive"
+          className="flex items-center gap-2"
+          onClick={async () => {
+            await onDelete(document.id);
+            onClose();
+          }}
+        >
           <Trash2 className="h-4 w-4" />
           Șterge
         </Button>
@@ -97,8 +108,23 @@ function DocumentDetails({ document, onClose }: DocumentDetailsProps) {
   );
 }
 
-export default function FolderDocumentsTable({ folder, documents }: FolderDocumentsTableProps) {
+export default function FolderDocumentsTable({
+  folder,
+  documents,
+  userId,
+}: FolderDocumentsTableProps) {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const router = useRouter();
+
+  const handleDelete = async (documentId: string) => {
+    try {
+      await deleteDocument(userId, documentId);
+      router.refresh(); // Refresh the page to show updated list
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      // You might want to show an error toast here
+    }
+  };
 
   const getStatusBadge = (status: DocumentStatus) => {
     const statusConfig = {
@@ -174,7 +200,12 @@ export default function FolderDocumentsTable({ folder, documents }: FolderDocume
                         Vezi detalii
                       </DropdownMenuItem>
                       <DropdownMenuItem>Descarcă</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">Șterge</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => handleDelete(document.id)}
+                      >
+                        Șterge
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -186,7 +217,11 @@ export default function FolderDocumentsTable({ folder, documents }: FolderDocume
 
       <Dialog open={!!selectedDocument} onOpenChange={() => setSelectedDocument(null)}>
         {selectedDocument && (
-          <DocumentDetails document={selectedDocument} onClose={() => setSelectedDocument(null)} />
+          <DocumentDetails
+            document={selectedDocument}
+            onClose={() => setSelectedDocument(null)}
+            onDelete={handleDelete}
+          />
         )}
       </Dialog>
     </div>

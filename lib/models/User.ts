@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   id: {
@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-export const User = mongoose.models.User || mongoose.model('User', userSchema);
+let User: Model<any>;
+try {
+  User = mongoose.model('User');
+} catch {
+  User = mongoose.model('User', userSchema);
+}
 
 export default User;

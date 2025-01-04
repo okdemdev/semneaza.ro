@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 
 const documentSchema = new mongoose.Schema({
   id: {
@@ -34,6 +34,11 @@ const documentSchema = new mongoose.Schema({
   },
 });
 
-export const Document = mongoose.models.Document || mongoose.model('Document', documentSchema);
+let Document: Model<any>;
+try {
+  Document = mongoose.model('Document');
+} catch {
+  Document = mongoose.model('Document', documentSchema);
+}
 
 export default Document;
