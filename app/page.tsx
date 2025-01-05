@@ -20,8 +20,8 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <LoginLink>Login</LoginLink>
-      <RegisterLink>Register</RegisterLink>
+      <LoginLink>Login1</LoginLink>
+      <RegisterLink>Register1</RegisterLink>
     </div>
   );
 }
