@@ -30,6 +30,8 @@ interface Document {
   title: string;
   email: string;
   createdAt: string;
+  fileUrl: string;
+  status: 'pending' | 'signed';
 }
 
 interface Folder {
@@ -126,6 +128,13 @@ export default function FolderDocumentsTable({
     }
   };
 
+  const handleCopyLink = async (documentId: string) => {
+    const url = `${window.location.origin}/documents/${documentId}/sign`;
+    await navigator.clipboard.writeText(url);
+    // You might want to show a toast notification here
+    alert('Link copiat în clipboard!');
+  };
+
   const getStatusBadge = (status: DocumentStatus) => {
     const statusConfig = {
       in_progress: { style: 'bg-orange-500 text-white', label: 'În curs' },
@@ -198,6 +207,9 @@ export default function FolderDocumentsTable({
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setSelectedDocument(document)}>
                         Vezi detalii
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleCopyLink(document.id)}>
+                        Copiază link
                       </DropdownMenuItem>
                       <DropdownMenuItem>Descarcă</DropdownMenuItem>
                       <DropdownMenuItem

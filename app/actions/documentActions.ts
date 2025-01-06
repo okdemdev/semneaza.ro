@@ -8,7 +8,9 @@ interface DocumentData {
   title: string;
   fileUrl: string;
   email: string;
-  signaturePlaceholder?: {
+  previewImageUrl: string;
+  signaturePlaceholder: {
+    pageNumber: number;
     x: number;
     y: number;
     width: number;
@@ -39,8 +41,10 @@ export async function createDocument(userId: string, folderId: string, documentD
     title: documentData.title,
     fileUrl: documentData.fileUrl,
     email: documentData.email,
+    previewImageUrl: documentData.previewImageUrl,
     signaturePlaceholder: documentData.signaturePlaceholder,
     signature: null, // Will be filled when recipient signs
+    status: 'pending',
   });
 
   return document;

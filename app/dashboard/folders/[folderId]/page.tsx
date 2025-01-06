@@ -34,6 +34,8 @@ export default async function FolderPage({ params, searchParams }: Props) {
       id: doc.id,
       title: doc.title,
       email: doc.email,
+      fileUrl: doc.fileUrl,
+      status: doc.status,
       createdAt: doc.createdAt.toISOString(),
     }));
 

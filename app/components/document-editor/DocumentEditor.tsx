@@ -122,15 +122,27 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
       return;
     }
 
+    if (!previewImage) {
+      setError('Nu am putut genera previzualizarea documentului');
+      return;
+    }
+
     try {
       const formData = new FormData();
       const fileUrl = await storage.uploadFile(selectedFile);
+
+      // Convert preview image from data URL to file
+      const previewImageFile = await fetch(previewImage)
+        .then((res) => res.blob())
+        .then((blob) => new File([blob], 'preview.png', { type: 'image/png' }));
+
+      const previewImageUrl = await storage.uploadFile(previewImageFile);
 
       formData.append('fileUrl', fileUrl);
       formData.append('title', documentName);
       formData.append('email', email);
       formData.append('signaturePlaceholder', JSON.stringify(signaturePlaceholder));
-      formData.append('previewImage', previewImage!);
+      formData.append('previewImageUrl', previewImageUrl);
 
       await onSave(formData);
     } catch (err) {
