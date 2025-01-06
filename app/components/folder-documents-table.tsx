@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { deleteDocument } from '@/app/actions/documentActions';
 import { useRouter } from 'next/navigation';
 
-type DocumentStatus = 'in_progress' | 'signed';
+type DocumentStatus = 'pending' | 'signed';
 
 interface Document {
   id: string;
@@ -31,7 +31,7 @@ interface Document {
   email: string;
   createdAt: string;
   fileUrl: string;
-  status: 'pending' | 'signed';
+  status: DocumentStatus;
 }
 
 interface Folder {
@@ -65,14 +65,22 @@ function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) 
         </div>
         <div>
           <h3 className="font-medium mb-1">Stare</h3>
-          <p className="text-sm text-gray-500">În curs</p>
+          <p className="text-sm text-gray-500">
+            {document.status === 'signed' ? 'Semnat' : 'În curs'}
+          </p>
         </div>
         <div>
           <h3 className="font-medium mb-1">Semnatari</h3>
           <div className="flex items-center text-sm text-gray-500">
             <Mail className="h-4 w-4 mr-2" />
             {document.email}
-            <Badge className="ml-2 bg-green-500 text-white">Semnat</Badge>
+            <Badge
+              className={`ml-2 ${
+                document.status === 'signed' ? 'bg-green-500' : 'bg-orange-500'
+              } text-white`}
+            >
+              {document.status === 'signed' ? 'Semnat' : 'În curs'}
+            </Badge>
           </div>
         </div>
         <div>
@@ -137,7 +145,7 @@ export default function FolderDocumentsTable({
 
   const getStatusBadge = (status: DocumentStatus) => {
     const statusConfig = {
-      in_progress: { style: 'bg-orange-500 text-white', label: 'În curs' },
+      pending: { style: 'bg-orange-500 text-white', label: 'În curs' },
       signed: { style: 'bg-green-500 text-white', label: 'Semnat' },
     };
 
@@ -192,11 +200,7 @@ export default function FolderDocumentsTable({
                   </div>
                 </TableCell>
                 <TableCell>{new Date(document.createdAt).toLocaleDateString('ro-RO')}</TableCell>
-                <TableCell>
-                  {getStatusBadge(
-                    ['in_progress', 'signed'][Math.floor(Math.random() * 2)] as DocumentStatus
-                  )}
-                </TableCell>
+                <TableCell>{getStatusBadge(document.status)}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
