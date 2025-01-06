@@ -1,15 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import SignaturePad from 'react-signature-canvas';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import React, { useRef } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
 
 interface SignatureModalProps {
   isOpen: boolean;
@@ -18,56 +10,60 @@ interface SignatureModalProps {
 }
 
 export default function SignatureModal({ isOpen, onClose, onSave }: SignatureModalProps) {
-  const signaturePadRef = useRef<any>(null);
-  const [isEmpty, setIsEmpty] = useState(true);
+  const signatureRef = useRef<SignatureCanvas>(null);
 
   const handleClear = () => {
-    signaturePadRef.current?.clear();
-    setIsEmpty(true);
+    signatureRef.current?.clear();
   };
 
   const handleSave = () => {
-    if (!isEmpty) {
-      const signatureData = signaturePadRef.current?.getTrimmedCanvas().toDataURL('image/png');
+    if (signatureRef.current?.isEmpty()) {
+      return;
+    }
+
+    const signatureData = signatureRef.current?.toDataURL('image/png');
+    if (signatureData) {
       onSave(signatureData);
-      onClose();
     }
   };
 
-  const handleBegin = () => {
-    setIsEmpty(false);
-  };
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Draw your signature</DialogTitle>
-        </DialogHeader>
-        <div className="border rounded-lg p-4 bg-white">
-          <SignaturePad
-            ref={signaturePadRef}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-[600px] max-w-[90vw]">
+        <h2 className="text-xl font-semibold mb-4">Desenează semnătura</h2>
+
+        <div className="border rounded-lg mb-4">
+          <SignatureCanvas
+            ref={signatureRef}
             canvasProps={{
-              className: 'signature-canvas w-full h-[200px] border rounded',
-              style: { backgroundColor: 'white' },
+              className: 'w-full h-[300px] bg-gray-50',
             }}
-            onBegin={handleBegin}
           />
         </div>
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={handleClear}>
-            Clear
-          </Button>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isEmpty}>
-              Save Signature
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={handleClear}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Șterge
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Anulează
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Salvează
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

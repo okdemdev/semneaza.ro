@@ -6,6 +6,16 @@ const documentSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  folder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Folder',
+    required: true,
+  },
   title: {
     type: String,
     required: true,
@@ -18,15 +28,35 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  folder: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Folder',
+  previewImageUrl: {
+    type: String,
     required: true,
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  signaturePlaceholder: {
+    type: {
+      pageNumber: Number,
+      x: Number,
+      y: Number,
+      width: Number,
+      height: Number,
+    },
     required: true,
+  },
+  signature: {
+    type: {
+      dataUrl: String,
+      date: Date,
+    },
+    default: null,
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'signed'],
+    default: 'pending',
+  },
+  signedFileUrl: {
+    type: String,
+    default: null,
   },
   createdAt: {
     type: Date,

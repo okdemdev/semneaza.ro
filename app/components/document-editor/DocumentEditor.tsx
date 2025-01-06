@@ -1,220 +1,260 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Signature, Type, Stamp, PenLine } from 'lucide-react';
-import { useEdgeStore } from '@/app/lib/edgestore';
-import PDFViewer from './PDFViewer';
+import React, { useState, useEffect } from 'react';
+import { PenLine, Plus } from 'lucide-react';
+import { useStorage } from '@/app/lib/storage';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/_next/static/pdf.worker.min.js';
 
 interface DocumentEditorProps {
+  documentUrl?: string;
   onSave: (formData: FormData) => Promise<void>;
 }
 
-export default function DocumentEditor({ onSave }: DocumentEditorProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [emails, setEmails] = useState<string[]>([]);
-  const [newEmail, setNewEmail] = useState('');
-  const [documentName, setDocumentName] = useState<string>('');
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [isPlacingSignature, setIsPlacingSignature] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { edgestore } = useEdgeStore();
+interface SignaturePlaceholder {
+  pageNumber: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorProps) {
+  const storage = useStorage();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentName, setDocumentName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [signaturePlaceholder, setSignaturePlaceholder] = useState<SignaturePlaceholder | null>(
+    null
+  );
+  const [isPlacingSignature, setIsPlacingSignature] = useState(false);
+
+  const convertPdfToImage = async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      const page = await pdf.getPage(1); // Get first page
+
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({
+        canvasContext: context!,
+        viewport: viewport,
+      }).promise;
+
+      return canvas.toDataURL();
+    } catch (error) {
+      console.error('Error converting PDF to image:', error);
+      throw new Error('Failed to convert PDF');
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setError(null);
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      setError('Please select a PDF file');
+      setError('Te rog selectează un fișier PDF');
       return;
     }
 
-    // Check file size (e.g., max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
+      setError('Fișierul trebuie să fie mai mic de 10MB');
       return;
     }
-
-    setSelectedFile(file);
-    setDocumentName(file.name.replace(/\.pdf$/i, ''));
-    console.log('File selected:', file);
-  };
-
-  const handleAddEmail = () => {
-    if (newEmail && !emails.includes(newEmail)) {
-      setEmails([...emails, newEmail]);
-      setNewEmail('');
-    }
-  };
-
-  const handleRemoveEmail = (emailToRemove: string) => {
-    setEmails(emails.filter((email) => email !== emailToRemove));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) return;
 
     try {
-      setIsUploading(true);
-      setError(null);
-      console.log('Starting upload...');
+      const imageUrl = await convertPdfToImage(file);
+      setPreviewImage(imageUrl);
+      setSelectedFile(file);
+      setDocumentName(file.name.replace(/\.pdf$/i, ''));
+    } catch (err) {
+      setError('Nu am putut procesa documentul PDF. Te rog încearcă din nou.');
+    }
+  };
 
-      // Upload file to EdgeStore
-      const res = await edgestore.publicFiles.upload({
-        file: selectedFile,
-        input: { type: 'pdf' },
-        onProgressChange: (progress) => {
-          console.log('Upload progress:', progress);
-        },
-      });
+  const handleAddSignaturePlaceholder = () => {
+    setIsPlacingSignature(true);
+  };
 
-      console.log('Upload successful:', res);
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPlacingSignature) return;
 
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setSignaturePlaceholder({
+      pageNumber: 1,
+      x,
+      y,
+      width: 200,
+      height: 100,
+    });
+    setIsPlacingSignature(false);
+  };
+
+  const handleSaveDocument = async () => {
+    if (!selectedFile) {
+      setError('Te rog încarcă un document PDF');
+      return;
+    }
+
+    if (!email) {
+      setError('Te rog introdu adresa de email');
+      return;
+    }
+
+    if (!signaturePlaceholder) {
+      setError('Te rog adaugă un loc pentru semnătură');
+      return;
+    }
+
+    try {
       const formData = new FormData();
+      const fileUrl = await storage.uploadFile(selectedFile);
+
+      formData.append('fileUrl', fileUrl);
       formData.append('title', documentName);
-      formData.append('emails', JSON.stringify(emails));
-      formData.append('fileUrl', res.url);
+      formData.append('email', email);
+      formData.append('signaturePlaceholder', JSON.stringify(signaturePlaceholder));
+      formData.append('previewImage', previewImage!);
 
       await onSave(formData);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setError(error instanceof Error ? error.message : 'Error uploading file. Please try again.');
-    } finally {
-      setIsUploading(false);
+    } catch (err) {
+      setError('A apărut o eroare la salvarea documentului. Te rog încearcă din nou.');
+      console.error('Error saving document:', err);
     }
   };
 
-  const handleNameChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      setIsEditingName(false);
-    }
-  };
+  if (!selectedFile && !documentUrl) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <label className="block">
+            <span className="sr-only">Alege fișier PDF</span>
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+            />
+          </label>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+          <p className="mt-2 text-sm text-gray-500">Încarcă un fișier PDF pentru a continua</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!selectedFile ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <label className="block">
-              <span className="sr-only">Choose PDF file</span>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-full file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-indigo-50 file:text-indigo-700
-                  hover:file:bg-indigo-100"
-              />
-            </label>
-            {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-            <p className="mt-2 text-sm text-gray-500">Upload a PDF file to continue</p>
-          </div>
-        </div>
-      ) : (
-        <div className="flex h-screen">
-          {/* Left Sidebar */}
-          <div className="w-[15%] bg-white p-4 border-r border-gray-200">
-            <div className="space-y-4">
-              <Button
-                variant={isPlacingSignature ? 'default' : 'outline'}
-                className="w-full justify-start"
-                onClick={() => setIsPlacingSignature(!isPlacingSignature)}
+    <div className="relative w-full h-full min-h-screen bg-gray-100 p-4">
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          {isEditingName ? (
+            <input
+              type="text"
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
+              onBlur={() => setIsEditingName(false)}
+              onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+              className="text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+          ) : (
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              {documentName}
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="text-gray-400 hover:text-gray-600"
               >
-                <Signature className="mr-2 h-4 w-4" />
-                Semnătură
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Type className="mr-2 h-4 w-4" />
-                Text
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Stamp className="mr-2 h-4 w-4" />
-                Ștampilă
-              </Button>
+                <PenLine className="h-4 w-4" />
+              </button>
+            </h1>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleAddSignaturePlaceholder}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              isPlacingSignature
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+            disabled={!!signaturePlaceholder}
+          >
+            <Plus className="h-4 w-4" />
+            {isPlacingSignature ? 'Click pentru semnătură' : 'Adaugă loc pentru semnătură'}
+          </button>
+          <button
+            onClick={handleSaveDocument}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            Salvează
+          </button>
+        </div>
+      </div>
 
-              <div className="pt-4 border-t">
-                <h3 className="text-sm font-medium mb-2">Recipients</h3>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="Add email"
-                      className="flex-1 px-2 py-1 text-sm border rounded"
-                    />
-                    <Button size="sm" onClick={handleAddEmail}>
-                      Add
-                    </Button>
-                  </div>
-                  <div className="space-y-1">
-                    {emails.map((email) => (
-                      <div
-                        key={email}
-                        className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-sm"
-                      >
-                        <span>{email}</span>
-                        <button
-                          onClick={() => handleRemoveEmail(email)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Email destinatar</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Introdu adresa de email"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div
+          className="relative w-full"
+          onClick={handleImageClick}
+          style={{ cursor: isPlacingSignature ? 'crosshair' : 'default' }}
+        >
+          {previewImage && (
+            <>
+              <img src={previewImage} alt="Document Preview" className="w-full h-auto" />
+              {signaturePlaceholder && (
+                <div
+                  className="absolute border-2 border-dashed border-blue-500 bg-blue-50 bg-opacity-30 rounded"
+                  style={{
+                    left: `${signaturePlaceholder.x}px`,
+                    top: `${signaturePlaceholder.y}px`,
+                    width: `${signaturePlaceholder.width}px`,
+                    height: `${signaturePlaceholder.height}px`,
+                  }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-blue-500 text-sm font-medium">Loc pentru semnătură</p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
-            {/* Top Bar */}
-            <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                {isEditingName ? (
-                  <input
-                    type="text"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    onBlur={() => setIsEditingName(false)}
-                    onKeyDown={handleNameChange}
-                    className="text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    autoFocus
-                  />
-                ) : (
-                  <h1 className="text-xl font-semibold flex items-center gap-2">
-                    {documentName}
-                    <button
-                      onClick={() => setIsEditingName(true)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <PenLine className="h-4 w-4" />
-                    </button>
-                  </h1>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button onClick={handleSubmit} disabled={isUploading}>
-                  {isUploading ? 'Uploading...' : 'Send and Save'}
-                </Button>
-              </div>
-            </div>
-
-            {/* PDF Viewer */}
-            {selectedFile && <PDFViewer file={selectedFile} />}
-          </div>
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
     </div>
