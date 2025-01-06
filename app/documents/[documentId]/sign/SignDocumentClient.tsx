@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import SignatureModal from '@/app/components/signature/SignatureModal';
 import { useRouter } from 'next/navigation';
 import { PDFDocument } from 'pdf-lib';
@@ -30,6 +30,7 @@ interface SignDocumentClientProps {
 export default function SignDocumentClient({ documentId }: SignDocumentClientProps) {
   const router = useRouter();
   const { edgestore } = useEdgeStore();
+  const previewImageRef = useRef<HTMLImageElement>(null);
   const [document, setDocument] = useState<DocumentData | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,13 +81,15 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
       const signatureImage = await pdfDoc.embedPng(signatureData);
 
       // Calculate signature position
-      const { width, height } = page.getSize();
-      const scale = width / 800; // Assuming preview width is 800px, adjust if different
+      const { width: pageWidth, height: pageHeight } = page.getSize();
 
-      const signatureWidth = document.signaturePlaceholder.width * scale;
-      const signatureHeight = document.signaturePlaceholder.height * scale;
-      const signatureX = document.signaturePlaceholder.x * scale;
-      const signatureY = height - document.signaturePlaceholder.y * scale - signatureHeight;
+      // Convert percentage positions to actual PDF coordinates
+      const signatureWidth = (document.signaturePlaceholder.width / 100) * pageWidth;
+      const signatureHeight = (document.signaturePlaceholder.height / 100) * pageHeight;
+      const signatureX = (document.signaturePlaceholder.x / 100) * pageWidth;
+      // In PDF coordinates, Y starts from bottom, so we need to invert the Y position
+      const signatureY =
+        pageHeight - (document.signaturePlaceholder.y / 100) * pageHeight - signatureHeight;
 
       // Add signature to PDF
       page.drawImage(signatureImage, {
@@ -167,31 +170,54 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="relative w-full">
-          <img src={document.previewImageUrl} alt="Document Preview" className="w-full h-auto" />
-          <div
-            className={`absolute border-2 ${
-              document.status === 'signed'
-                ? 'border-green-500 bg-green-50'
-                : 'border-dashed border-blue-500 bg-blue-50'
-            } bg-opacity-30 rounded cursor-pointer`}
-            style={{
-              left: `${document.signaturePlaceholder.x}px`,
-              top: `${document.signaturePlaceholder.y}px`,
-              width: `${document.signaturePlaceholder.width}px`,
-              height: `${document.signaturePlaceholder.height}px`,
-            }}
-            onClick={handleSignatureClick}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p
-                className={`text-sm font-medium ${
-                  document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
-                }`}
+          <img
+            ref={previewImageRef}
+            src={document.previewImageUrl}
+            alt="Document Preview"
+            className="w-full h-auto"
+          />
+          {previewImageRef.current && (
+            <div
+              className={`absolute border-2 ${
+                document.status === 'signed'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-dashed border-blue-500 bg-blue-50'
+              } bg-opacity-30 rounded cursor-pointer`}
+              style={{
+                left: `${document.signaturePlaceholder.x}%`,
+                top: `${document.signaturePlaceholder.y}%`,
+                width: `${document.signaturePlaceholder.width}%`,
+                height: `${document.signaturePlaceholder.height}%`,
+              }}
+              onClick={handleSignatureClick}
+            >
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  fontSize: previewImageRef.current
+                    ? `${Math.min(
+                        (previewImageRef.current.offsetWidth *
+                          document.signaturePlaceholder.width *
+                          0.08) /
+                          100,
+                        (previewImageRef.current.offsetHeight *
+                          document.signaturePlaceholder.height *
+                          0.16) /
+                          100
+                      )}px`
+                    : 'inherit',
+                }}
               >
-                {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
-              </p>
+                <p
+                  className={`font-medium text-center whitespace-nowrap ${
+                    document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
+                  }`}
+                >
+                  {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

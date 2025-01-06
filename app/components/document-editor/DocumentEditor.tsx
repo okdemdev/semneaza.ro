@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { PenLine, Plus } from 'lucide-react';
 import { useStorage } from '@/app/lib/storage';
 import * as pdfjsLib from 'pdfjs-dist';
+import SignaturePlaceholder from '@/app/components/signature/SignaturePlaceholder';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/_next/static/pdf.worker.min.js';
@@ -15,16 +16,17 @@ interface DocumentEditorProps {
 
 interface SignaturePlaceholder {
   pageNumber: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number; // percentage of document width
+  y: number; // percentage of document height
+  width: number; // percentage of document width
+  height: number; // percentage of document height
 }
 
 export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorProps) {
   const storage = useStorage();
+  const previewImageRef = React.useRef<HTMLImageElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentName, setDocumentName] = useState<string>('');
+  const [documentName, setDocumentName] = useState<string>('Document nou');
   const [email, setEmail] = useState<string>('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,21 +91,58 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
     setIsPlacingSignature(true);
   };
 
+  const getPreviewImageRect = () => {
+    if (!previewImageRef.current) return null;
+    return previewImageRef.current.getBoundingClientRect();
+  };
+
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isPlacingSignature) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     setSignaturePlaceholder({
       pageNumber: 1,
       x,
       y,
-      width: 200,
-      height: 100,
+      width: 25, // 25% of document width
+      height: 15, // 15% of document height
     });
     setIsPlacingSignature(false);
+  };
+
+  const handlePlaceholderPositionChange = (position: { x: number; y: number }) => {
+    if (signaturePlaceholder && previewImage) {
+      const rect = getPreviewImageRect();
+      if (rect) {
+        const xPercent = (position.x / rect.width) * 100;
+        const yPercent = (position.y / rect.height) * 100;
+
+        setSignaturePlaceholder({
+          ...signaturePlaceholder,
+          x: xPercent,
+          y: yPercent,
+        });
+      }
+    }
+  };
+
+  const handlePlaceholderSizeChange = (size: { width: number; height: number }) => {
+    if (signaturePlaceholder && previewImage) {
+      const rect = getPreviewImageRect();
+      if (rect) {
+        const widthPercent = (size.width / rect.width) * 100;
+        const heightPercent = (size.height / rect.height) * 100;
+
+        setSignaturePlaceholder({
+          ...signaturePlaceholder,
+          width: widthPercent,
+          height: heightPercent,
+        });
+      }
+    }
   };
 
   const handleSaveDocument = async () => {
@@ -243,21 +282,27 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
         >
           {previewImage && (
             <>
-              <img src={previewImage} alt="Document Preview" className="w-full h-auto" />
-              {signaturePlaceholder && (
-                <div
-                  className="absolute border-2 border-dashed border-blue-500 bg-blue-50 bg-opacity-30 rounded"
-                  style={{
-                    left: `${signaturePlaceholder.x}px`,
-                    top: `${signaturePlaceholder.y}px`,
-                    width: `${signaturePlaceholder.width}px`,
-                    height: `${signaturePlaceholder.height}px`,
+              <img
+                ref={previewImageRef}
+                src={previewImage}
+                alt="Document Preview"
+                className="w-full h-auto"
+              />
+              {signaturePlaceholder && previewImageRef.current && (
+                <SignaturePlaceholder
+                  position={{
+                    x: (signaturePlaceholder.x / 100) * previewImageRef.current.offsetWidth,
+                    y: (signaturePlaceholder.y / 100) * previewImageRef.current.offsetHeight,
                   }}
-                >
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <p className="text-blue-500 text-sm font-medium">Loc pentru semnătură</p>
-                  </div>
-                </div>
+                  size={{
+                    width: (signaturePlaceholder.width / 100) * previewImageRef.current.offsetWidth,
+                    height:
+                      (signaturePlaceholder.height / 100) * previewImageRef.current.offsetHeight,
+                  }}
+                  onPositionChange={handlePlaceholderPositionChange}
+                  onSizeChange={handlePlaceholderSizeChange}
+                  onPlaceholderClick={() => {}}
+                />
               )}
             </>
           )}
