@@ -2,46 +2,28 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Signature, Type, Stamp, PenLine } from 'lucide-react';
-import SignatureModal from '@/app/components/signature/SignatureModal';
-import DraggableSignature from '@/app/components/signature/DraggableSignature';
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { Signature, Type, Stamp, PenLine } from 'lucide-react';
+import { useEdgeStore } from '@/app/lib/edgestore';
+import PDFViewer from './PDFViewer';
 
 interface DocumentEditorProps {
   onSave: (formData: FormData) => Promise<void>;
 }
 
-interface SignatureField {
-  id: string;
-  signatureData: string;
-  position: { x: number; y: number };
-}
-
 export default function DocumentEditor({ onSave }: DocumentEditorProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [emails, setEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [documentName, setDocumentName] = useState<string>('');
   const [isEditingName, setIsEditingName] = useState(false);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [signatures, setSignatures] = useState<SignatureField[]>([]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  const [isPlacingSignature, setIsPlacingSignature] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const { edgestore } = useEdgeStore();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPdfUrl(url);
-      // Set initial document name from file name, removing .pdf extension
       setDocumentName(file.name.replace(/\.pdf$/i, ''));
     } else {
       alert('Please select a PDF file');
@@ -63,13 +45,26 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
     e.preventDefault();
     if (!selectedFile) return;
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('emails', JSON.stringify(emails));
-    formData.append('title', documentName);
-    formData.append('signatures', JSON.stringify(signatures));
+    try {
+      setIsUploading(true);
+      // Upload file to EdgeStore
+      const res = await edgestore.publicFiles.upload({
+        file: selectedFile,
+        input: { type: 'pdf' },
+      });
 
-    await onSave(formData);
+      const formData = new FormData();
+      formData.append('title', documentName);
+      formData.append('emails', JSON.stringify(emails));
+      formData.append('fileUrl', res.url);
+
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleNameChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -78,37 +73,9 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
     }
   };
 
-  const handleSignatureSave = (signatureData: string) => {
-    const newSignature: SignatureField = {
-      id: `signature-${signatures.length + 1}`,
-      signatureData,
-      position: { x: 0, y: 0 },
-    };
-    setSignatures([...signatures, newSignature]);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, delta } = event;
-
-    setSignatures(
-      signatures.map((sig) => {
-        if (sig.id === active.id) {
-          return {
-            ...sig,
-            position: {
-              x: sig.position.x + delta.x,
-              y: sig.position.y + delta.y,
-            },
-          };
-        }
-        return sig;
-      })
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {!pdfUrl ? (
+      {!selectedFile ? (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <label className="block">
@@ -134,9 +101,9 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
           <div className="w-[15%] bg-white p-4 border-r border-gray-200">
             <div className="space-y-4">
               <Button
-                variant="outline"
+                variant={isPlacingSignature ? 'default' : 'outline'}
                 className="w-full justify-start"
-                onClick={() => setIsSignatureModalOpen(true)}
+                onClick={() => setIsPlacingSignature(!isPlacingSignature)}
               >
                 <Signature className="mr-2 h-4 w-4" />
                 Semnătură
@@ -213,38 +180,16 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
                   </h1>
                 )}
               </div>
-              <Button onClick={handleSubmit}>Send and Save</Button>
+              <Button onClick={handleSubmit} disabled={isUploading}>
+                {isUploading ? 'Uploading...' : 'Send and Save'}
+              </Button>
             </div>
 
-            {/* PDF Viewer with Signatures */}
-            <div className="flex-1 bg-gray-100 p-4 relative">
-              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full border-0 rounded shadow-lg"
-                  title="PDF Viewer"
-                />
-                {signatures.map((signature) => (
-                  <div
-                    key={signature.id}
-                    style={{
-                      transform: `translate(${signature.position.x}px, ${signature.position.y}px)`,
-                    }}
-                  >
-                    <DraggableSignature id={signature.id} signatureData={signature.signatureData} />
-                  </div>
-                ))}
-              </DndContext>
-            </div>
+            {/* PDF Viewer */}
+            {selectedFile && <PDFViewer file={selectedFile} />}
           </div>
         </div>
       )}
-
-      <SignatureModal
-        isOpen={isSignatureModalOpen}
-        onClose={() => setIsSignatureModalOpen(false)}
-        onSave={handleSignatureSave}
-      />
     </div>
   );
 }

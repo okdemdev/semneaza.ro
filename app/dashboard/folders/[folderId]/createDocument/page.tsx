@@ -20,14 +20,20 @@ export default async function CreateDocumentPage({ params }: PageProps) {
     const user = await requireUser();
     const title = formData.get('title')?.toString() || '';
     const emails = JSON.parse(formData.get('emails')?.toString() || '[]');
+    const fileUrl = formData.get('fileUrl')?.toString();
+
+    if (!fileUrl) {
+      throw new Error('No file URL provided');
+    }
 
     // For now, we'll just use the first email in the list
     const email = emails[0] || '';
 
-    // Create the document with the title and email
+    // Create the document with the title, email, and file URL
     const document = await createDocument(user.id, folderId, {
       title,
       email,
+      fileUrl,
     });
 
     redirect(`/dashboard/folders/${folderId}`);

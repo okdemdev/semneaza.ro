@@ -14,6 +14,10 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  fileUrl: {
+    type: String,
+    required: true,
+  },
   folder: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Folder',

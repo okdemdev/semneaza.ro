@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 export async function createDocument(
   userId: string,
   folderId: string,
-  documentData: { title: string; email: string }
+  documentData: { title: string; email: string; fileUrl: string }
 ) {
   await dbConnect();
 
