@@ -87,7 +87,6 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
       const signatureWidth = (document.signaturePlaceholder.width / 100) * pageWidth;
       const signatureHeight = (document.signaturePlaceholder.height / 100) * pageHeight;
       const signatureX = (document.signaturePlaceholder.x / 100) * pageWidth;
-      // In PDF coordinates, Y starts from bottom, so we need to invert the Y position
       const signatureY =
         pageHeight - (document.signaturePlaceholder.y / 100) * pageHeight - signatureHeight;
 
@@ -131,8 +130,12 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
         throw new Error('Failed to sign document');
       }
 
-      const data = await response.json();
-      router.push(`/documents/${documentId}/success`);
+      // Redirect with the signed document info
+      router.push(
+        `/documents/${documentId}/success?title=${encodeURIComponent(
+          document.title
+        )}&url=${encodeURIComponent(uploadResult.url)}`
+      );
     } catch (err) {
       console.error('Error signing document:', err);
       setError('A apărut o eroare la semnarea documentului. Te rog încearcă din nou.');
