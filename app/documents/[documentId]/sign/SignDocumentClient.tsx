@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import SignatureModal from '@/app/components/signature/SignatureModal';
 import { useRouter } from 'next/navigation';
+import { PDFDocument } from 'pdf-lib';
+import { useEdgeStore } from '@/app/lib/edgestore';
 
 interface DocumentData {
   id: string;
@@ -27,6 +29,7 @@ interface SignDocumentClientProps {
 
 export default function SignDocumentClient({ documentId }: SignDocumentClientProps) {
   const router = useRouter();
+  const { edgestore } = useEdgeStore();
   const [document, setDocument] = useState<DocumentData | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +63,55 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
   };
 
   const handleSignatureSave = async (signatureData: string) => {
+    if (!document) return;
+
     setIsSignatureModalOpen(false);
     setIsSigning(true);
     setError(null);
 
     try {
+      // Load the original PDF
+      const pdfBytes = await fetch(document.fileUrl).then((res) => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const pages = pdfDoc.getPages();
+      const page = pages[document.signaturePlaceholder.pageNumber - 1];
+
+      // Convert signature data URL to image
+      const signatureImage = await pdfDoc.embedPng(signatureData);
+
+      // Calculate signature position
+      const { width, height } = page.getSize();
+      const scale = width / 800; // Assuming preview width is 800px, adjust if different
+
+      const signatureWidth = document.signaturePlaceholder.width * scale;
+      const signatureHeight = document.signaturePlaceholder.height * scale;
+      const signatureX = document.signaturePlaceholder.x * scale;
+      const signatureY = height - document.signaturePlaceholder.y * scale - signatureHeight;
+
+      // Add signature to PDF
+      page.drawImage(signatureImage, {
+        x: signatureX,
+        y: signatureY,
+        width: signatureWidth,
+        height: signatureHeight,
+      });
+
+      // Save the signed PDF
+      const signedPdfBytes = await pdfDoc.save();
+      const signedPdfBlob = new Blob([signedPdfBytes], { type: 'application/pdf' });
+      const signedPdfFile = new File([signedPdfBlob], `signed_${document.id}.pdf`, {
+        type: 'application/pdf',
+      });
+
+      // Upload the signed PDF
+      const uploadResult = await edgestore.publicFiles.upload({
+        file: signedPdfFile,
+        options: {
+          replaceTargetUrl: document.fileUrl,
+        },
+      });
+
+      // Update the document status
       const response = await fetch(`/api/documents/${documentId}/sign`, {
         method: 'POST',
         headers: {
@@ -73,6 +120,7 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
         body: JSON.stringify({
           signatureData,
           date: new Date().toISOString(),
+          signedFileUrl: uploadResult.url,
         }),
       });
 
@@ -83,6 +131,7 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
       const data = await response.json();
       router.push(`/documents/${documentId}/success`);
     } catch (err) {
+      console.error('Error signing document:', err);
       setError('A apărut o eroare la semnarea documentului. Te rog încearcă din nou.');
     } finally {
       setIsSigning(false);
