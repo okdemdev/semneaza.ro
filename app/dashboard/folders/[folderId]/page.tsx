@@ -35,6 +35,7 @@ export default async function FolderPage({ params, searchParams }: Props) {
       title: doc.title,
       email: doc.email,
       fileUrl: doc.fileUrl,
+      signedFileUrl: doc.signedFileUrl,
       status: doc.status || 'pending',
       createdAt: doc.createdAt.toISOString(),
     }));

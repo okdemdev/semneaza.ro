@@ -31,6 +31,7 @@ interface Document {
   email: string;
   createdAt: string;
   fileUrl: string;
+  signedFileUrl?: string;
   status: DocumentStatus;
 }
 
@@ -53,6 +54,19 @@ interface DocumentDetailsProps {
 }
 
 function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) {
+  const handleDownload = async () => {
+    const url = document.status === 'signed' ? document.signedFileUrl : document.fileUrl;
+    if (!url) return;
+
+    // Create a temporary link to trigger the download
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = `${document.title}${document.status === 'signed' ? '_signed' : ''}.pdf`;
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
+  };
+
   return (
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
@@ -112,7 +126,7 @@ function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) 
           <Trash2 className="h-4 w-4" />
           Șterge
         </Button>
-        <Button>Descarcă</Button>
+        <Button onClick={handleDownload}>Descarcă</Button>
       </div>
     </DialogContent>
   );
@@ -150,6 +164,19 @@ export default function FolderDocumentsTable({
     };
 
     return <Badge className={statusConfig[status].style}>{statusConfig[status].label}</Badge>;
+  };
+
+  const handleDownload = async (document: Document) => {
+    const url = document.status === 'signed' ? document.signedFileUrl : document.fileUrl;
+    if (!url) return;
+
+    // Create a temporary link to trigger the download
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = `${document.title}${document.status === 'signed' ? '_signed' : ''}.pdf`;
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
   };
 
   return (
@@ -215,7 +242,9 @@ export default function FolderDocumentsTable({
                       <DropdownMenuItem onClick={() => handleCopyLink(document.id)}>
                         Copiază link
                       </DropdownMenuItem>
-                      <DropdownMenuItem>Descarcă</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload(document)}>
+                        Descarcă {document.status === 'signed' ? 'semnat' : ''}
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600"
                         onClick={() => handleDelete(document.id)}
