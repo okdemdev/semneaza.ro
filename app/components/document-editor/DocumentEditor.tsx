@@ -18,16 +18,31 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isPlacingSignature, setIsPlacingSignature] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { edgestore } = useEdgeStore();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setSelectedFile(file);
-      setDocumentName(file.name.replace(/\.pdf$/i, ''));
-    } else {
-      alert('Please select a PDF file');
+    setError(null);
+
+    if (!file) {
+      return;
     }
+
+    if (file.type !== 'application/pdf') {
+      setError('Please select a PDF file');
+      return;
+    }
+
+    // Check file size (e.g., max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    setDocumentName(file.name.replace(/\.pdf$/i, ''));
+    console.log('File selected:', file);
   };
 
   const handleAddEmail = () => {
@@ -47,11 +62,19 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
 
     try {
       setIsUploading(true);
+      setError(null);
+      console.log('Starting upload...');
+
       // Upload file to EdgeStore
       const res = await edgestore.publicFiles.upload({
         file: selectedFile,
         input: { type: 'pdf' },
+        onProgressChange: (progress) => {
+          console.log('Upload progress:', progress);
+        },
       });
+
+      console.log('Upload successful:', res);
 
       const formData = new FormData();
       formData.append('title', documentName);
@@ -61,7 +84,7 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
       await onSave(formData);
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Error uploading file. Please try again.');
+      setError(error instanceof Error ? error.message : 'Error uploading file. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -92,6 +115,7 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
                   hover:file:bg-indigo-100"
               />
             </label>
+            {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
             <p className="mt-2 text-sm text-gray-500">Upload a PDF file to continue</p>
           </div>
         </div>
@@ -180,9 +204,12 @@ export default function DocumentEditor({ onSave }: DocumentEditorProps) {
                   </h1>
                 )}
               </div>
-              <Button onClick={handleSubmit} disabled={isUploading}>
-                {isUploading ? 'Uploading...' : 'Send and Save'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <Button onClick={handleSubmit} disabled={isUploading}>
+                  {isUploading ? 'Uploading...' : 'Send and Save'}
+                </Button>
+              </div>
             </div>
 
             {/* PDF Viewer */}
