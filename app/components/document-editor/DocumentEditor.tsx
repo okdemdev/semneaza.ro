@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PenLine, Plus } from 'lucide-react';
+import { PenLine, Plus, X } from 'lucide-react';
 import { useStorage } from '@/app/lib/storage';
 import * as pdfjsLib from 'pdfjs-dist';
 import SignaturePlaceholder from '@/app/components/signature/SignaturePlaceholder';
@@ -27,7 +27,8 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
   const previewImageRef = React.useRef<HTMLImageElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState<string>('Document nou');
-  const [email, setEmail] = useState<string>('');
+  const [emails, setEmails] = useState<string[]>([]);
+  const [currentEmail, setCurrentEmail] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -35,6 +36,8 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
     null
   );
   const [isPlacingSignature, setIsPlacingSignature] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [isEmailLocked, setIsEmailLocked] = useState(false);
 
   const convertPdfToImage = async (file: File) => {
     try {
@@ -145,14 +148,35 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
     }
   };
 
+  const handleAddEmail = () => {
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setIsEmailLocked(true);
+      setError(null);
+    } else {
+      setError('Te rog introdu o adresă de email validă');
+    }
+  };
+
+  const handleRemoveEmail = () => {
+    setEmail('');
+    setIsEmailLocked(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddEmail();
+    }
+  };
+
   const handleSaveDocument = async () => {
     if (!selectedFile) {
       setError('Te rog încarcă un document PDF');
       return;
     }
 
-    if (!email) {
-      setError('Te rog introdu adresa de email');
+    if (!email || !isEmailLocked) {
+      setError('Te rog adaugă o adresă de email');
       return;
     }
 
@@ -170,7 +194,6 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
       const formData = new FormData();
       const fileUrl = await storage.uploadFile(selectedFile);
 
-      // Convert preview image from data URL to file
       const previewImageFile = await fetch(previewImage)
         .then((res) => res.blob())
         .then((blob) => new File([blob], 'preview.png', { type: 'image/png' }));
@@ -216,9 +239,11 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
   }
 
   return (
-    <div className="relative w-full h-full min-h-screen bg-gray-100 p-4">
-      <div className="mb-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
+    <div className="flex h-screen bg-gray-100">
+      {/* Left Sidebar */}
+      <div className="w-80 bg-white p-6 border-r border-gray-200 flex flex-col">
+        {/* Document Title */}
+        <div className="mb-6">
           {isEditingName ? (
             <input
               type="text"
@@ -226,7 +251,7 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
               onChange={(e) => setDocumentName(e.target.value)}
               onBlur={() => setIsEditingName(false)}
               onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-              className="text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
           ) : (
@@ -241,79 +266,111 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
             </h1>
           )}
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleAddSignaturePlaceholder}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              isPlacingSignature
-                ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
-            disabled={!!signaturePlaceholder}
-          >
-            <Plus className="h-4 w-4" />
-            {isPlacingSignature ? 'Click pentru semnătură' : 'Adaugă loc pentru semnătură'}
-          </button>
-          <button
-            onClick={handleSaveDocument}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            Salvează
-          </button>
-        </div>
-      </div>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Email destinatar</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Introdu adresa de email"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div
-          className="relative w-full"
-          onClick={handleImageClick}
-          style={{ cursor: isPlacingSignature ? 'crosshair' : 'default' }}
-        >
-          {previewImage && (
-            <>
-              <img
-                ref={previewImageRef}
-                src={previewImage}
-                alt="Document Preview"
-                className="w-full h-auto"
+        {/* Email Input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email destinatar</label>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Introdu adresa de email"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                  isEmailLocked ? 'bg-gray-50' : ''
+                }`}
+                readOnly={isEmailLocked}
               />
-              {signaturePlaceholder && previewImageRef.current && (
-                <SignaturePlaceholder
-                  position={{
-                    x: (signaturePlaceholder.x / 100) * previewImageRef.current.offsetWidth,
-                    y: (signaturePlaceholder.y / 100) * previewImageRef.current.offsetHeight,
-                  }}
-                  size={{
-                    width: (signaturePlaceholder.width / 100) * previewImageRef.current.offsetWidth,
-                    height:
-                      (signaturePlaceholder.height / 100) * previewImageRef.current.offsetHeight,
-                  }}
-                  onPositionChange={handlePlaceholderPositionChange}
-                  onSizeChange={handlePlaceholderSizeChange}
-                  onPlaceholderClick={() => {}}
-                />
+              {isEmailLocked && (
+                <button
+                  onClick={handleRemoveEmail}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               )}
-            </>
-          )}
+            </div>
+            {!isEmailLocked && (
+              <button
+                onClick={handleAddEmail}
+                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium whitespace-nowrap"
+              >
+                Adaugă
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Signature Placeholder Button */}
+        <button
+          onClick={handleAddSignaturePlaceholder}
+          className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 mb-6 text-sm font-medium ${
+            isPlacingSignature
+              ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+          }`}
+          disabled={!!signaturePlaceholder}
+        >
+          <Plus className="h-4 w-4" />
+          {isPlacingSignature ? 'Click pentru semnătură' : 'Adaugă loc pentru semnătură'}
+        </button>
+
+        {/* Save Button */}
+        <button
+          onClick={handleSaveDocument}
+          className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors mt-auto"
+        >
+          Salvează
+        </button>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+      {/* Document Preview */}
+      <div className="flex-1 p-6 flex items-center justify-center overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg h-full max-h-full w-auto overflow-hidden">
+          <div
+            className="relative h-full"
+            onClick={handleImageClick}
+            style={{ cursor: isPlacingSignature ? 'crosshair' : 'default' }}
+          >
+            {previewImage && (
+              <>
+                <img
+                  ref={previewImageRef}
+                  src={previewImage}
+                  alt="Document Preview"
+                  className="h-full w-auto"
+                />
+                {signaturePlaceholder && previewImageRef.current && (
+                  <SignaturePlaceholder
+                    position={{
+                      x: (signaturePlaceholder.x / 100) * previewImageRef.current.offsetWidth,
+                      y: (signaturePlaceholder.y / 100) * previewImageRef.current.offsetHeight,
+                    }}
+                    size={{
+                      width:
+                        (signaturePlaceholder.width / 100) * previewImageRef.current.offsetWidth,
+                      height:
+                        (signaturePlaceholder.height / 100) * previewImageRef.current.offsetHeight,
+                    }}
+                    onPositionChange={handlePlaceholderPositionChange}
+                    onSizeChange={handlePlaceholderSizeChange}
+                    onPlaceholderClick={() => {}}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
