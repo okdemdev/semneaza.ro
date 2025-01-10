@@ -373,48 +373,50 @@ export default function DocumentEditor({
       </div>
 
       {/* Document Preview */}
-      <div className="flex-1 bg-gray-100 p-8 overflow-y-auto">
-        <div
-          className="relative bg-white rounded-lg shadow-sm mx-auto"
-          style={{ maxWidth: '800px' }}
-          onClick={handleImageClick}
-        >
-          {previewImage && (
-            <>
-              <img
-                ref={previewImageRef}
-                src={previewImage}
-                alt="Document preview"
-                className="w-full h-auto"
-              />
-              {signaturePlaceholder && (
-                <SignaturePlaceholder
-                  position={{
-                    x: (signaturePlaceholder.x / 100) * previewImageRef.current!.offsetWidth,
-                    y: (signaturePlaceholder.y / 100) * previewImageRef.current!.offsetHeight,
-                  }}
-                  size={{
-                    width:
-                      (signaturePlaceholder.width / 100) * previewImageRef.current!.offsetWidth,
-                    height:
-                      (signaturePlaceholder.height / 100) * previewImageRef.current!.offsetHeight,
-                  }}
-                  onPositionChange={handlePlaceholderPositionChange}
-                  onSizeChange={handlePlaceholderSizeChange}
-                  onPlaceholderClick={() => {}}
+      <div className="flex-1 bg-gray-100 overflow-hidden">
+        <div className="h-full overflow-y-auto p-8">
+          <div
+            className="relative bg-white rounded-lg shadow-sm mx-auto"
+            style={{ maxWidth: '800px' }}
+            onClick={handleImageClick}
+          >
+            {previewImage && (
+              <>
+                <img
+                  ref={previewImageRef}
+                  src={previewImage}
+                  alt="Document preview"
+                  className="w-full h-auto"
                 />
-              )}
-            </>
-          )}
-          {isPlacingSignature && (
-            <div className="absolute inset-0 bg-blue-500 bg-opacity-10 cursor-crosshair">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-blue-600 font-medium bg-white px-4 py-2 rounded-md shadow-sm">
-                  Click pentru a plasa semnătura
-                </p>
+                {signaturePlaceholder && (
+                  <SignaturePlaceholder
+                    position={{
+                      x: (signaturePlaceholder.x / 100) * previewImageRef.current!.offsetWidth,
+                      y: (signaturePlaceholder.y / 100) * previewImageRef.current!.offsetHeight,
+                    }}
+                    size={{
+                      width:
+                        (signaturePlaceholder.width / 100) * previewImageRef.current!.offsetWidth,
+                      height:
+                        (signaturePlaceholder.height / 100) * previewImageRef.current!.offsetHeight,
+                    }}
+                    onPositionChange={handlePlaceholderPositionChange}
+                    onSizeChange={handlePlaceholderSizeChange}
+                    onPlaceholderClick={() => {}}
+                  />
+                )}
+              </>
+            )}
+            {isPlacingSignature && (
+              <div className="absolute inset-0 bg-blue-500 bg-opacity-10 cursor-crosshair">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-blue-600 font-medium bg-white px-4 py-2 rounded-md shadow-sm">
+                    Click pentru a plasa semnătura
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

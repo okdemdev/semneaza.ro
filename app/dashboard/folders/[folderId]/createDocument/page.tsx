@@ -34,9 +34,9 @@ export default async function CreateDocumentPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-full flex flex-col">
       {/* Top Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="flex-none bg-white border-b border-gray-200">
         <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             href={`/dashboard/folders/${folderId}`}
@@ -50,7 +50,7 @@ export default async function CreateDocumentPage({ params }: Props) {
       </div>
 
       {/* Main Content */}
-      <div className="h-[calc(100vh-4rem)]">
+      <div className="flex-1 overflow-hidden">
         <DocumentEditor onSave={handleSubmit} sendButtonContainerId="send-button-container" />
       </div>
     </div>
