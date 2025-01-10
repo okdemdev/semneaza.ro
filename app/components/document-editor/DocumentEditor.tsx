@@ -260,7 +260,7 @@ export default function DocumentEditor({
     if (selectedFile) {
       renderSendButton();
     }
-  }, [selectedFile, email, isEmailLocked, signaturePlaceholder, sendButtonContainerId]);
+  }, [selectedFile, email, isEmailLocked, signaturePlaceholder, sendButtonContainerId, isLoading]);
 
   if (!selectedFile && !documentUrl) {
     return (

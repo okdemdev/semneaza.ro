@@ -146,8 +146,8 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
+        <div className="text-center max-w-md w-full">
           <p className="text-red-500">{error}</p>
         </div>
       </div>
@@ -156,8 +156,8 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
 
   if (!document) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
+        <div className="text-center max-w-md w-full">
           <p className="text-gray-500">Se încarcă documentul...</p>
         </div>
       </div>
@@ -165,62 +165,66 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
   }
 
   return (
-    <div className="relative w-full h-full min-h-screen bg-gray-100 p-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold">{document.title}</h1>
-        <p className="text-sm text-gray-500">Te rugăm să semnezi documentul în locul indicat</p>
-      </div>
+    <div className="relative w-full min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold">{document.title}</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
+            Te rugăm să semnezi documentul în locul indicat
+          </p>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="relative w-full">
-          <img
-            ref={previewImageRef}
-            src={document.previewImageUrl}
-            alt="Document Preview"
-            className="w-full h-auto"
-          />
-          {previewImageRef.current && (
-            <div
-              className={`absolute border-2 ${
-                document.status === 'signed'
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-dashed border-blue-500 bg-blue-50'
-              } bg-opacity-30 rounded cursor-pointer`}
-              style={{
-                left: `${document.signaturePlaceholder.x}%`,
-                top: `${document.signaturePlaceholder.y}%`,
-                width: `${document.signaturePlaceholder.width}%`,
-                height: `${document.signaturePlaceholder.height}%`,
-              }}
-              onClick={handleSignatureClick}
-            >
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="relative w-full">
+            <img
+              ref={previewImageRef}
+              src={document.previewImageUrl}
+              alt="Document Preview"
+              className="w-full h-auto"
+            />
+            {previewImageRef.current && (
               <div
-                className="absolute inset-0 flex items-center justify-center"
+                className={`absolute border-2 ${
+                  document.status === 'signed'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-dashed border-blue-500 bg-blue-50'
+                } bg-opacity-30 rounded cursor-pointer transition-colors duration-200 hover:bg-opacity-40`}
                 style={{
-                  fontSize: previewImageRef.current
-                    ? `${Math.min(
-                        (previewImageRef.current.offsetWidth *
-                          document.signaturePlaceholder.width *
-                          0.08) /
-                          100,
-                        (previewImageRef.current.offsetHeight *
-                          document.signaturePlaceholder.height *
-                          0.16) /
-                          100
-                      )}px`
-                    : 'inherit',
+                  left: `${document.signaturePlaceholder.x}%`,
+                  top: `${document.signaturePlaceholder.y}%`,
+                  width: `${document.signaturePlaceholder.width}%`,
+                  height: `${document.signaturePlaceholder.height}%`,
                 }}
+                onClick={handleSignatureClick}
               >
-                <p
-                  className={`font-medium text-center whitespace-nowrap ${
-                    document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
-                  }`}
+                <div
+                  className="absolute inset-0 flex items-center justify-center p-1"
+                  style={{
+                    fontSize: previewImageRef.current
+                      ? `${Math.min(
+                          (previewImageRef.current.offsetWidth *
+                            document.signaturePlaceholder.width *
+                            0.08) /
+                            100,
+                          (previewImageRef.current.offsetHeight *
+                            document.signaturePlaceholder.height *
+                            0.16) /
+                            100
+                        )}px`
+                      : 'inherit',
+                  }}
                 >
-                  {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
-                </p>
+                  <p
+                    className={`font-medium text-center whitespace-nowrap ${
+                      document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
+                    }`}
+                  >
+                    {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -231,9 +235,12 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
       />
 
       {isSigning && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-lg">
-            <p className="text-gray-700">Se procesează semnătura...</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <p className="text-gray-700 text-center">Se procesează semnătura...</p>
+            </div>
           </div>
         </div>
       )}
