@@ -2,6 +2,7 @@ import dbConnect from '@/lib/db';
 import Folder from '@/lib/models/Folder';
 import User from '@/lib/models/User';
 import mongoose from 'mongoose';
+import Document from '@/lib/models/Document';
 
 export async function createFolder(
   userId: string,
@@ -49,6 +50,9 @@ export async function deleteFolder(folderId: string, userId: string) {
   if (!folder) {
     throw new Error('Folder not found or access denied');
   }
+
+  // Delete all documents in the folder
+  await Document.deleteMany({ folder: folder._id });
 
   // Delete the folder
   await Folder.deleteOne({ id: folderId });

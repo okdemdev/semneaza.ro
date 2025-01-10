@@ -1,3 +1,5 @@
+'use server';
+
 import dbConnect from '@/lib/db';
 import Document from '@/lib/models/Document';
 import Folder from '@/lib/models/Folder';
@@ -102,4 +104,18 @@ export async function deleteDocument(userId: string, documentId: string) {
 
   await Document.deleteOne({ id: documentId });
   return { success: true };
+}
+
+export async function getDocumentsByUser(userId: string) {
+  await dbConnect();
+
+  const user = await User.findOne({ id: userId });
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const documents = await Document.find({ user: user._id })
+    .populate('folder')
+    .sort({ createdAt: -1 });
+  return documents;
 }
