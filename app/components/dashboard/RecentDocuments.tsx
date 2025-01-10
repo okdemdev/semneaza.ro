@@ -163,27 +163,22 @@ export default function RecentDocuments({ documents, userId }: RecentDocumentsPr
               className="block p-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
             >
               <div className="flex items-start justify-between">
-                <Link
-                  href={doc.folder ? `/dashboard/folders/${doc.folder.id}/${doc.id}` : '#'}
-                  className="flex-1"
-                >
-                  <div className="flex items-start space-x-3">
-                    <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{doc.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-500">{doc.email}</span>
-                        <div className="flex items-center gap-1 text-green-500">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span className="text-xs">Email sent</span>
-                        </div>
+                <div className="flex items-start space-x-3">
+                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{doc.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500">{doc.email}</span>
+                      <div className="flex items-center gap-1 text-green-500">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="text-xs">Email sent</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Folder: {doc.folder ? doc.folder.name : 'Deleted folder'}
-                      </p>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Folder: {doc.folder ? doc.folder.name : 'Deleted folder'}
+                    </p>
                   </div>
-                </Link>
+                </div>
                 <div className="flex items-center gap-2">
                   {getStatusBadge(doc.status)}
                   <DropdownMenu>
