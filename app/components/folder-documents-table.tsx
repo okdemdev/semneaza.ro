@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileText, CheckCircle2, MoreVertical, Mail, Trash2 } from 'lucide-react';
+import { FileText, CheckCircle2, MoreVertical, Mail, Trash2, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,9 +55,19 @@ interface DocumentDetailsProps {
   document: Document;
   onClose: () => void;
   onDelete: (documentId: string) => Promise<void>;
+  onRefresh: (documentId: string) => Promise<void>;
+  isRefreshing: boolean;
 }
 
-function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) {
+function DocumentDetails({
+  document,
+  onClose,
+  onDelete,
+  onRefresh,
+  isRefreshing,
+}: DocumentDetailsProps) {
+  const router = useRouter();
+
   const handleDownload = async () => {
     const url = document.status === 'signed' ? document.signedFileUrl : document.fileUrl;
     if (!url) return;
@@ -82,9 +92,22 @@ function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) 
         </div>
         <div>
           <h3 className="font-medium mb-1">Stare</h3>
-          <p className="text-sm text-gray-500">
-            {document.status === 'signed' ? 'Semnat' : 'În curs'}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-gray-500">
+              {document.status === 'signed' ? 'Semnat' : 'În curs'}
+            </p>
+            {document.status === 'pending' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-gray-100 transition-transform"
+                onClick={() => onRefresh(document.id)}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </div>
         <div>
           <h3 className="font-medium mb-1">Semnatari</h3>
@@ -173,6 +196,7 @@ export default function FolderDocumentsTable({
   userId,
 }: FolderDocumentsTableProps) {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const router = useRouter();
 
   const handleDelete = async (documentId: string) => {
@@ -192,13 +216,41 @@ export default function FolderDocumentsTable({
     alert('Link copiat în clipboard!');
   };
 
-  const getStatusBadge = (status: DocumentStatus) => {
+  const handleRefresh = async (documentId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setRefreshingId(documentId);
+    router.refresh();
+    // Add a minimum delay so the spinner is visible
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setRefreshingId(null);
+  };
+
+  const getStatusBadge = (document: Document) => {
     const statusConfig = {
       pending: { style: 'bg-orange-500 text-white', label: 'În curs' },
       signed: { style: 'bg-green-500 text-white', label: 'Semnat' },
     };
 
-    return <Badge className={statusConfig[status].style}>{statusConfig[status].label}</Badge>;
+    return (
+      <div className="flex items-center gap-2">
+        <Badge className={statusConfig[document.status].style}>
+          {statusConfig[document.status].label}
+        </Badge>
+        {document.status === 'pending' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 hover:bg-gray-100 transition-transform"
+            onClick={(e) => handleRefresh(document.id, e)}
+            disabled={refreshingId === document.id}
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${refreshingId === document.id ? 'animate-spin' : ''}`}
+            />
+          </Button>
+        )}
+      </div>
+    );
   };
 
   const handleDownload = async (document: Document) => {
@@ -253,7 +305,7 @@ export default function FolderDocumentsTable({
                   minute: '2-digit',
                 })}
               </TableCell>
-              <TableCell>{getStatusBadge(document.status)}</TableCell>
+              <TableCell>{getStatusBadge(document)}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -291,6 +343,8 @@ export default function FolderDocumentsTable({
             document={selectedDocument}
             onClose={() => setSelectedDocument(null)}
             onDelete={handleDelete}
+            onRefresh={handleRefresh}
+            isRefreshing={refreshingId === selectedDocument.id}
           />
         )}
       </Dialog>
