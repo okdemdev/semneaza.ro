@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PenLine, Plus, X } from 'lucide-react';
+import { PenLine, Plus, X, Loader2 } from 'lucide-react';
 import { useStorage } from '@/app/lib/storage';
 import * as pdfjsLib from 'pdfjs-dist';
 import SignaturePlaceholder from '@/app/components/signature/SignaturePlaceholder';
@@ -44,6 +44,7 @@ export default function DocumentEditor({
   const [isPlacingSignature, setIsPlacingSignature] = useState(false);
   const [email, setEmail] = useState<string>('');
   const [isEmailLocked, setIsEmailLocked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const convertPdfToImage = async (file: File) => {
     try {
@@ -197,6 +198,7 @@ export default function DocumentEditor({
     }
 
     try {
+      setIsLoading(true);
       const formData = new FormData();
       const fileUrl = await storage.uploadFile(selectedFile);
 
@@ -216,6 +218,8 @@ export default function DocumentEditor({
     } catch (err) {
       setError('A apărut o eroare la salvarea documentului. Te rog încearcă din nou.');
       console.error('Error saving document:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -226,19 +230,25 @@ export default function DocumentEditor({
       <button
         type="button"
         onClick={handleSaveDocument}
-        disabled={!isValid}
+        disabled={!isValid || isLoading}
         className={`flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-          isValid ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+          isValid && !isLoading ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
         } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
       >
-        Trimite documentul la semnat
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Se trimite...
+          </>
+        ) : (
+          'Trimite documentul la semnat'
+        )}
       </button>
     );
 
     if (sendButtonContainerId && typeof document !== 'undefined') {
       const container = document.getElementById(sendButtonContainerId);
       if (container) {
-        // Use ReactDOM to render the button in the container
         const root = ReactDOM.createRoot(container);
         root.render(button);
       }

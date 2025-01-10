@@ -33,6 +33,10 @@ interface Document {
   fileUrl: string;
   signedFileUrl?: string;
   status: DocumentStatus;
+  signature?: {
+    date: string;
+  };
+  emailSentAt?: string;
 }
 
 interface Folder {
@@ -58,7 +62,6 @@ function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) 
     const url = document.status === 'signed' ? document.signedFileUrl : document.fileUrl;
     if (!url) return;
 
-    // Create a temporary link to trigger the download
     const link = window.document.createElement('a');
     link.href = url;
     link.download = `${document.title}${document.status === 'signed' ? '_signed' : ''}.pdf`;
@@ -100,15 +103,47 @@ function DocumentDetails({ document, onClose, onDelete }: DocumentDetailsProps) 
         <div>
           <h3 className="font-medium mb-1">Dată Trimitere</h3>
           <p className="text-sm text-gray-500">
-            {new Date(document.createdAt).toLocaleDateString('ro-RO')}
+            {new Date(document.createdAt).toLocaleDateString('ro-RO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </p>
         </div>
         <div>
-          <h3 className="font-medium mb-1">Dată Finalizare</h3>
-          <p className="text-sm text-gray-500">
-            {new Date(document.createdAt).toLocaleDateString('ro-RO')}
-          </p>
+          <h3 className="font-medium mb-1">Email Trimis</h3>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span>
+              {new Date(document.emailSentAt || document.createdAt).toLocaleDateString('ro-RO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+            <div className="flex items-center gap-1 text-green-500">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-xs">Email trimis</span>
+            </div>
+          </div>
         </div>
+        {document.status === 'signed' && document.signature?.date && (
+          <div>
+            <h3 className="font-medium mb-1">Dată Finalizare</h3>
+            <p className="text-sm text-gray-500">
+              {new Date(document.signature.date).toLocaleDateString('ro-RO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
+        )}
         <div>
           <h3 className="font-medium mb-1">ID</h3>
           <p className="text-sm font-mono text-gray-500">{document.id}</p>
@@ -209,7 +244,15 @@ export default function FolderDocumentsTable({
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{new Date(document.createdAt).toLocaleDateString('ro-RO')}</TableCell>
+              <TableCell>
+                {new Date(document.createdAt).toLocaleDateString('ro-RO', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </TableCell>
               <TableCell>{getStatusBadge(document.status)}</TableCell>
               <TableCell>
                 <DropdownMenu>

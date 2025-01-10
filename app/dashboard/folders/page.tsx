@@ -2,6 +2,7 @@ import { getFoldersByUser, deleteFolder } from '@/app/actions/folderActions';
 import { requireUser } from '@/lib/requireUser';
 import Link from 'next/link';
 import { FolderIcon } from '@heroicons/react/24/outline';
+import EmptyFoldersDialog from '@/app/components/folders/EmptyFoldersDialog';
 
 export default async function FoldersPage() {
   const user = await requireUser();
@@ -27,7 +28,7 @@ export default async function FoldersPage() {
       </div>
 
       {folders.length === 0 ? (
-        <p className="text-gray-500">You haven't created any folders yet.</p>
+        <EmptyFoldersDialog />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {folders.map((folder) => (
