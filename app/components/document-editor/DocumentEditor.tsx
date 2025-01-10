@@ -5,6 +5,7 @@ import { PenLine, Plus, X } from 'lucide-react';
 import { useStorage } from '@/app/lib/storage';
 import * as pdfjsLib from 'pdfjs-dist';
 import SignaturePlaceholder from '@/app/components/signature/SignaturePlaceholder';
+import ReactDOM from 'react-dom/client';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/_next/static/pdf.worker.min.js';
@@ -12,6 +13,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/_next/static/pdf.worker.min.js';
 interface DocumentEditorProps {
   documentUrl?: string;
   onSave: (formData: FormData) => Promise<void>;
+  sendButtonContainerId?: string;
 }
 
 interface SignaturePlaceholder {
@@ -22,7 +24,11 @@ interface SignaturePlaceholder {
   height: number; // percentage of document height
 }
 
-export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorProps) {
+export default function DocumentEditor({
+  documentUrl,
+  onSave,
+  sendButtonContainerId,
+}: DocumentEditorProps) {
   const storage = useStorage();
   const previewImageRef = React.useRef<HTMLImageElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -213,10 +219,44 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
     }
   };
 
+  // Function to render the send button
+  const renderSendButton = () => {
+    const isValid = selectedFile && email && isEmailLocked && signaturePlaceholder;
+    const button = (
+      <button
+        type="button"
+        onClick={handleSaveDocument}
+        disabled={!isValid}
+        className={`flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+          isValid ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+        } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+      >
+        Trimite documentul la semnat
+      </button>
+    );
+
+    if (sendButtonContainerId && typeof document !== 'undefined') {
+      const container = document.getElementById(sendButtonContainerId);
+      if (container) {
+        // Use ReactDOM to render the button in the container
+        const root = ReactDOM.createRoot(container);
+        root.render(button);
+      }
+    }
+  };
+
+  // Effect to handle send button rendering
+  useEffect(() => {
+    if (selectedFile) {
+      renderSendButton();
+    }
+  }, [selectedFile, email, isEmailLocked, signaturePlaceholder, sendButtonContainerId]);
+
   if (!selectedFile && !documentUrl) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-sm">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Creează document nou</h2>
           <label className="block">
             <span className="sr-only">Alege fișier PDF</span>
             <input
@@ -232,143 +272,149 @@ export default function DocumentEditor({ documentUrl, onSave }: DocumentEditorPr
             />
           </label>
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-          <p className="mt-2 text-sm text-gray-500">Încarcă un fișier PDF pentru a continua</p>
+          <p className="mt-4 text-sm text-gray-500">
+            Încarcă un fișier PDF pentru a începe procesul de semnare
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-full">
       {/* Left Sidebar */}
-      <div className="w-80 bg-white p-6 border-r border-gray-200 flex flex-col">
-        {/* Document Title */}
-        <div className="mb-6">
-          {isEditingName ? (
-            <input
-              type="text"
-              value={documentName}
-              onChange={(e) => setDocumentName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-              className="w-full text-xl font-semibold px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-          ) : (
-            <h1 className="text-xl font-semibold flex items-center gap-2">
-              {documentName}
-              <button
-                onClick={() => setIsEditingName(true)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <PenLine className="h-4 w-4" />
-              </button>
-            </h1>
-          )}
-        </div>
+      <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 min-h-0">
+          <div className="h-full overflow-y-auto">
+            <div className="p-6 space-y-6">
+              {/* Document Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nume document
+                </label>
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    onBlur={() => setIsEditingName(false)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                ) : (
+                  <div
+                    onClick={() => setIsEditingName(true)}
+                    className="flex items-center justify-between group cursor-pointer p-2 hover:bg-gray-50 rounded-md"
+                  >
+                    <span className="text-sm text-gray-900">{documentName}</span>
+                    <PenLine className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                  </div>
+                )}
+              </div>
 
-        {/* Email Input */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email destinatar</label>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Introdu adresa de email"
-                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                  isEmailLocked ? 'bg-gray-50' : ''
-                }`}
-                readOnly={isEmailLocked}
-              />
-              {isEmailLocked && (
+              {/* Email Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email semnatar
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isEmailLocked}
+                    placeholder="email@example.com"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                  />
+                  {isEmailLocked ? (
+                    <button
+                      onClick={handleRemoveEmail}
+                      className="p-2 text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleAddEmail}
+                      className="p-2 text-blue-600 hover:text-blue-700"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Signature Placeholder Controls */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Loc semnătură
+                </label>
                 <button
-                  onClick={handleRemoveEmail}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={handleAddSignaturePlaceholder}
+                  disabled={!!signaturePlaceholder}
+                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <X className="h-4 w-4" />
+                  <PenLine className="h-4 w-4 mr-2" />
+                  {signaturePlaceholder ? 'Loc semnătură adăugat' : 'Adaugă loc semnătură'}
                 </button>
-              )}
+              </div>
             </div>
-            {!isEmailLocked && (
-              <button
-                onClick={handleAddEmail}
-                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium whitespace-nowrap"
-              >
-                Adaugă
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Signature Placeholder Button */}
-        <button
-          onClick={handleAddSignaturePlaceholder}
-          className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-2 mb-6 text-sm font-medium ${
-            isPlacingSignature
-              ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-              : 'bg-blue-500 hover:bg-blue-600 text-white'
-          }`}
-          disabled={!!signaturePlaceholder}
-        >
-          <Plus className="h-4 w-4" />
-          {isPlacingSignature ? 'Click pentru semnătură' : 'Adaugă loc pentru semnătură'}
-        </button>
-
-        {/* Save Button */}
-        <button
-          onClick={handleSaveDocument}
-          className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors mt-auto"
-        >
-          Salvează
-        </button>
-
-        {/* Error Message */}
+        {/* Error Messages */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-4 border-t border-gray-200 bg-red-50">
+            <p className="text-sm text-red-500">{error}</p>
           </div>
         )}
       </div>
 
       {/* Document Preview */}
-      <div className="flex-1 p-6 flex items-center justify-center overflow-hidden">
-        <div className="bg-white rounded-lg shadow-lg h-full max-h-full w-auto overflow-hidden">
-          <div
-            className="relative h-full"
-            onClick={handleImageClick}
-            style={{ cursor: isPlacingSignature ? 'crosshair' : 'default' }}
-          >
-            {previewImage && (
-              <>
-                <img
-                  ref={previewImageRef}
-                  src={previewImage}
-                  alt="Document Preview"
-                  className="h-full w-auto"
+      <div className="flex-1 bg-gray-100 p-8 overflow-y-auto">
+        <div
+          className="relative bg-white rounded-lg shadow-sm mx-auto"
+          style={{ maxWidth: '800px' }}
+          onClick={handleImageClick}
+        >
+          {previewImage && (
+            <>
+              <img
+                ref={previewImageRef}
+                src={previewImage}
+                alt="Document preview"
+                className="w-full h-auto"
+              />
+              {signaturePlaceholder && (
+                <SignaturePlaceholder
+                  position={{
+                    x: (signaturePlaceholder.x / 100) * previewImageRef.current!.offsetWidth,
+                    y: (signaturePlaceholder.y / 100) * previewImageRef.current!.offsetHeight,
+                  }}
+                  size={{
+                    width:
+                      (signaturePlaceholder.width / 100) * previewImageRef.current!.offsetWidth,
+                    height:
+                      (signaturePlaceholder.height / 100) * previewImageRef.current!.offsetHeight,
+                  }}
+                  onPositionChange={handlePlaceholderPositionChange}
+                  onSizeChange={handlePlaceholderSizeChange}
+                  onPlaceholderClick={() => {}}
                 />
-                {signaturePlaceholder && previewImageRef.current && (
-                  <SignaturePlaceholder
-                    position={{
-                      x: (signaturePlaceholder.x / 100) * previewImageRef.current.offsetWidth,
-                      y: (signaturePlaceholder.y / 100) * previewImageRef.current.offsetHeight,
-                    }}
-                    size={{
-                      width:
-                        (signaturePlaceholder.width / 100) * previewImageRef.current.offsetWidth,
-                      height:
-                        (signaturePlaceholder.height / 100) * previewImageRef.current.offsetHeight,
-                    }}
-                    onPositionChange={handlePlaceholderPositionChange}
-                    onSizeChange={handlePlaceholderSizeChange}
-                    onPlaceholderClick={() => {}}
-                  />
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
+          {isPlacingSignature && (
+            <div className="absolute inset-0 bg-blue-500 bg-opacity-10 cursor-crosshair">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-blue-600 font-medium bg-white px-4 py-2 rounded-md shadow-sm">
+                  Click pentru a plasa semnătura
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

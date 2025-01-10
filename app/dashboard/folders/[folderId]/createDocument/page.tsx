@@ -2,6 +2,8 @@ import { createDocument } from '@/app/actions/documentActions';
 import DocumentEditor from '@/app/components/document-editor/DocumentEditor';
 import { requireUser } from '@/lib/requireUser';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 interface Props {
   params: { folderId: string };
@@ -31,5 +33,26 @@ export default async function CreateDocumentPage({ params }: Props) {
     redirect(`/dashboard/folders/${folderId}`);
   }
 
-  return <DocumentEditor onSave={handleSubmit} />;
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Top Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link
+            href={`/dashboard/folders/${folderId}`}
+            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Înapoi la folder
+          </Link>
+          <div id="send-button-container"></div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="h-[calc(100vh-4rem)]">
+        <DocumentEditor onSave={handleSubmit} sendButtonContainerId="send-button-container" />
+      </div>
+    </div>
+  );
 }
