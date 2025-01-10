@@ -14,7 +14,15 @@ interface FolderCardsProps {
 export default function FolderCards({ folders }: FolderCardsProps) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Cu ce folder lucrezi astăzi?</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">Cu ce folder lucrezi astăzi?</h2>
+        <Link
+          href="/dashboard/folders/new"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+        >
+          Creează folder
+        </Link>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {folders.map((folder) => (
           <Link
