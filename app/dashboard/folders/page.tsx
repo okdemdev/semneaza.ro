@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/requireUser';
 import Link from 'next/link';
 import { FolderIcon } from '@heroicons/react/24/outline';
 import EmptyFoldersDialog from '@/app/components/folders/EmptyFoldersDialog';
+import DeleteFolderButton from '@/app/components/folders/DeleteFolderButton';
 
 export default async function FoldersPage() {
   const user = await requireUser();
@@ -10,7 +11,6 @@ export default async function FoldersPage() {
 
   async function handleDelete(folderId: string) {
     'use server';
-
     const user = await requireUser();
     await deleteFolder(folderId, user.id);
   }
@@ -50,11 +50,9 @@ export default async function FoldersPage() {
                   </div>
                 </div>
               </Link>
-              <form action={handleDelete.bind(null, folder.id)} className="absolute top-4 right-4">
-                <button type="submit" className="text-red-600 hover:text-red-800 font-medium">
-                  Sterge
-                </button>
-              </form>
+              <div className="absolute top-4 right-4">
+                <DeleteFolderButton folderId={folder.id} deleteAction={handleDelete} />
+              </div>
             </div>
           ))}
         </div>

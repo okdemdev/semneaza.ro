@@ -30,7 +30,10 @@ export default function EmptyFoldersDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end">
-          <Button onClick={() => router.push('/dashboard/folders/new')}>
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => router.push('/dashboard/folders/new')}
+          >
             Creează primul folder
           </Button>
         </div>
