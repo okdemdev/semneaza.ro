@@ -4,10 +4,11 @@ import Document from '@/lib/models/Document';
 
 export async function GET(request: Request, { params }: { params: { documentId: string } }) {
   try {
-    const { documentId } = params;
     await dbConnect();
+    const documentId = params.documentId;
 
     const document = await Document.findOne({ id: documentId });
+
     if (!document) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
