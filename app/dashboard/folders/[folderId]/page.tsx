@@ -2,9 +2,10 @@ import { Button } from '@/components/ui/button';
 import { getFolder } from '@/app/actions/folderActions';
 import { getDocumentsByFolder } from '@/app/actions/documentActions';
 import { requireUser } from '@/lib/requireUser';
-import { AlertCircle, ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import FolderDocumentsTable from '@/app/components/folder-documents-table';
+import NewDocumentButton from '@/app/components/new-document-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,12 +59,7 @@ export default async function FolderPage({ params, searchParams }: Props) {
               )}
             </div>
           </div>
-          <Link href={`/dashboard/folders/${folderId}/createDocument`}>
-            <Button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600">
-              <Plus className="h-4 w-4" />
-              Document nou
-            </Button>
-          </Link>
+          <NewDocumentButton folderId={folderId} />
         </div>
 
         <div className="flex-1 bg-gray-50">

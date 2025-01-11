@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 interface Props {
-  params: { folderId: string };
+  params: Promise<{ folderId: string }>;
 }
 
 export default async function CreateDocumentPage({ params }: Props) {
   const user = await requireUser();
-  const { folderId } = params;
+  const { folderId } = await params;
 
   async function handleSubmit(formData: FormData) {
     'use server';
