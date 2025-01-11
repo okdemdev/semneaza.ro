@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FolderIcon } from '@heroicons/react/24/outline';
+import { FolderIcon, FolderPlusIcon } from '@heroicons/react/24/outline';
 
 interface Folder {
   id: string;
@@ -18,33 +18,54 @@ export default function FolderCards({ folders }: FolderCardsProps) {
         <h2 className="text-xl font-semibold text-gray-900">Cu ce folder lucrezi astăzi?</h2>
         <Link
           href="/dashboard/folders/new"
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 inline-flex items-center gap-2"
         >
+          <FolderPlusIcon className="h-5 w-5" />
           Creează folder
         </Link>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {folders.map((folder) => (
-          <Link
-            key={folder.id}
-            href={`/dashboard/folders/${folder.id}`}
-            className="group relative bg-white rounded-lg p-6 border-2 border-gray-200 hover:border-blue-500 transition-all duration-200 hover:shadow-lg"
-          >
-            <div className="absolute -top-3 -left-3 bg-blue-500 rounded-lg p-3 shadow-lg transform group-hover:scale-110 transition-transform duration-200">
-              <FolderIcon className="h-8 w-8 text-white" />
-            </div>
-            <div className="ml-8 mt-4">
-              <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                {folder.name}
-              </h3>
-              <p className="mt-2 text-sm text-gray-500 line-clamp-2">{folder.description}</p>
-              <div className="mt-4 flex items-center text-sm text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Deschide folderul →
+
+      {folders.length === 0 ? (
+        <div className="text-center py-12">
+          <FolderIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">Nu ai niciun folder</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Creează primul tău folder pentru a începe să organizezi documentele.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/dashboard/folders/new"
+              className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+            >
+              <FolderPlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+              Creează primul folder
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {folders.map((folder) => (
+            <Link
+              key={folder.id}
+              href={`/dashboard/folders/${folder.id}`}
+              className="group relative bg-white rounded-lg p-6 border-2 border-gray-200 hover:border-blue-500 transition-all duration-200 hover:shadow-lg"
+            >
+              <div className="absolute -top-3 -left-3 bg-blue-500 rounded-lg p-3 shadow-lg transform group-hover:scale-110 transition-transform duration-200">
+                <FolderIcon className="h-8 w-8 text-white" />
               </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+              <div className="ml-8 mt-4">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                  {folder.name}
+                </h3>
+                <p className="mt-2 text-sm text-gray-500 line-clamp-2">{folder.description}</p>
+                <div className="mt-4 flex items-center text-sm text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  Deschide folderul →
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

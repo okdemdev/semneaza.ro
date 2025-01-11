@@ -46,7 +46,6 @@ export default async function DashboardPage() {
 
   return (
     <>
-      {folders.length === 0 && <EmptyFoldersDialog />}
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="space-y-8">
@@ -85,7 +84,6 @@ export default async function DashboardPage() {
 
               {/* Recent Documents */}
               <div className="space-y-4">
-                <h2 className="text-lg font-medium text-gray-900">Documente recente</h2>
                 <RecentDocuments documents={recentDocuments} userId={user.id} />
               </div>
             </div>

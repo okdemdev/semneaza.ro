@@ -153,30 +153,29 @@ export default function RecentDocuments({ documents, userId }: RecentDocumentsPr
   };
 
   return (
-    <div className="border rounded-lg p-4">
-      <h3 className="text-sm font-medium text-gray-900 mb-4">Documente recente</h3>
+    <div className="rounded-lg border border-gray-200 bg-white shadow">
+      <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
+        <h3 className="text-base font-semibold leading-6 text-gray-900">Documente recente</h3>
+      </div>
       {documents.length > 0 ? (
-        <div className="space-y-3">
+        <div className="divide-y divide-gray-200">
           {documents.map((doc) => (
-            <div
-              key={doc.id}
-              className="block p-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
-            >
+            <div key={doc.id} className="p-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
-                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <FileText className="h-5 w-5 text-blue-500 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">{doc.title}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm text-gray-500">{doc.email}</span>
                       <div className="flex items-center gap-1 text-green-500">
                         <CheckCircle2 className="h-4 w-4" />
-                        <span className="text-xs">Email sent</span>
+                        <span className="text-xs">Email trimis</span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Folder: {doc.folder ? doc.folder.name : 'Deleted folder'}
-                    </p>
+                    {doc.folder && (
+                      <p className="text-xs text-gray-500 mt-1">Folder: {doc.folder.name}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -219,9 +218,11 @@ export default function RecentDocuments({ documents, userId }: RecentDocumentsPr
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">Nu există documente recente.</p>
+        <div className="px-4 py-8 text-center">
+          <FileText className="mx-auto h-10 w-10 text-gray-400" />
+          <p className="mt-2 text-sm text-gray-500">Nu există documente recente.</p>
+        </div>
       )}
-
       <Dialog open={!!selectedDocument} onOpenChange={() => setSelectedDocument(null)}>
         {selectedDocument && (
           <DocumentDetails
