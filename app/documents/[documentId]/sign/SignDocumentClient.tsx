@@ -35,25 +35,57 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   useEffect(() => {
+    console.log('Fetching document...');
+    let isMounted = true;
+
     const fetchDocument = async () => {
       try {
         const response = await fetch(`/api/documents/${documentId}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Document not found');
-        }
         const data = await response.json();
-        setDocument(data);
+        console.log('Response:', response.status, data);
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Document not found');
+        }
+
+        if (isMounted) {
+          console.log('Setting document:', data);
+          setDocument(data);
+          // Reset image loaded state when document changes
+          setIsImageLoaded(false);
+
+          // Preload the image
+          const img = new Image();
+          img.onload = () => {
+            if (isMounted) {
+              console.log('Image preloaded successfully');
+              setIsImageLoaded(true);
+            }
+          };
+          img.src = data.previewImageUrl;
+        }
       } catch (err) {
         console.error('Error fetching document:', err);
-        setError('Nu am putut găsi documentul. Te rog verifică link-ul.');
+        if (isMounted) {
+          setError('Nu am putut găsi documentul. Te rog verifică link-ul.');
+        }
       }
     };
 
     fetchDocument();
+
+    return () => {
+      isMounted = false;
+    };
   }, [documentId]);
+
+  const handleImageLoad = () => {
+    console.log('Image loaded, setting state...');
+    setIsImageLoaded(true);
+  };
 
   const handleSignatureClick = () => {
     if (document?.status === 'signed') {
@@ -154,15 +186,35 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
     );
   }
 
-  if (!document) {
+  console.log('Current state:', {
+    hasDocument: !!document,
+    isImageLoaded,
+    previewUrl: document?.previewImageUrl,
+  });
+
+  if (!document || !isImageLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
         <div className="text-center max-w-md w-full">
-          <p className="text-gray-500">Se încarcă documentul...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <p className="mt-2 text-gray-500">Se încarcă documentul...</p>
+          <p className="mt-1 text-sm text-gray-400">
+            {!document ? 'Se încarcă datele...' : 'Se încarcă imaginea...'}
+          </p>
         </div>
       </div>
     );
   }
+
+  // Now we know document is not null
+  const fontSize = Math.min(
+    (previewImageRef.current?.offsetWidth || 0) *
+      (document.signaturePlaceholder.width / 100) *
+      0.08,
+    (previewImageRef.current?.offsetHeight || 0) *
+      (document.signaturePlaceholder.height / 100) *
+      0.16
+  );
 
   return (
     <div className="relative w-full min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8">
@@ -181,49 +233,32 @@ export default function SignDocumentClient({ documentId }: SignDocumentClientPro
               src={document.previewImageUrl}
               alt="Document Preview"
               className="w-full h-auto"
+              loading="eager"
             />
-            {previewImageRef.current && (
-              <div
-                className={`absolute border-2 ${
-                  document.status === 'signed'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-dashed border-blue-500 bg-blue-50'
-                } bg-opacity-30 rounded cursor-pointer transition-colors duration-200 hover:bg-opacity-40`}
-                style={{
-                  left: `${document.signaturePlaceholder.x}%`,
-                  top: `${document.signaturePlaceholder.y}%`,
-                  width: `${document.signaturePlaceholder.width}%`,
-                  height: `${document.signaturePlaceholder.height}%`,
-                }}
-                onClick={handleSignatureClick}
-              >
-                <div
-                  className="absolute inset-0 flex items-center justify-center p-1"
-                  style={{
-                    fontSize: previewImageRef.current
-                      ? `${Math.min(
-                          (previewImageRef.current.offsetWidth *
-                            document.signaturePlaceholder.width *
-                            0.08) /
-                            100,
-                          (previewImageRef.current.offsetHeight *
-                            document.signaturePlaceholder.height *
-                            0.16) /
-                            100
-                        )}px`
-                      : 'inherit',
-                  }}
+            <div
+              className={`absolute border-2 ${
+                document.status === 'signed'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-dashed border-blue-500 bg-blue-50'
+              } bg-opacity-30 rounded cursor-pointer transition-colors duration-200 hover:bg-opacity-40`}
+              style={{
+                left: `${document.signaturePlaceholder.x}%`,
+                top: `${document.signaturePlaceholder.y}%`,
+                width: `${document.signaturePlaceholder.width}%`,
+                height: `${document.signaturePlaceholder.height}%`,
+              }}
+              onClick={handleSignatureClick}
+            >
+              <div className="absolute inset-0 flex items-center justify-center p-1">
+                <p
+                  className={`font-medium text-center whitespace-nowrap ${
+                    document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
+                  } text-[min(2vw,16px)]`}
                 >
-                  <p
-                    className={`font-medium text-center whitespace-nowrap ${
-                      document.status === 'signed' ? 'text-green-500' : 'text-blue-500'
-                    }`}
-                  >
-                    {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
-                  </p>
-                </div>
+                  {document.status === 'signed' ? 'Document semnat' : 'Click pentru a semna'}
+                </p>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
