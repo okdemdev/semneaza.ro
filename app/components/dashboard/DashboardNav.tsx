@@ -22,7 +22,7 @@ export default function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-gray-800">
+    <nav className="bg-blue-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -34,9 +34,9 @@ export default function DashboardNav() {
                   href={item.href}
                   className={`${
                     isActive
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2`}
+                      ? 'bg-blue-700 text-white'
+                      : 'text-white hover:bg-blue-500 hover:text-white'
+                  } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2 transition-colors`}
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.name}</span>
@@ -49,20 +49,24 @@ export default function DashboardNav() {
               href="/dashboard/settings"
               className={`${
                 pathname === '/dashboard/settings'
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-              } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2`}
+                  ? 'bg-blue-700 text-white'
+                  : 'text-white hover:bg-blue-500 hover:text-white'
+              } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2 transition-colors`}
             >
               <Cog6ToothIcon className="h-5 w-5" />
-              <span>Settings</span>
+              <span>Setari</span>
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-blue-500 hover:text-white transition-colors"
+                >
                   <UserCircle className="h-6 w-6" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 <LogoutLink className="w-full">
                   <DropdownMenuItem className="text-red-600 cursor-pointer">
                     Deconectare
