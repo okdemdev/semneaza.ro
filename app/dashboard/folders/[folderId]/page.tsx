@@ -8,14 +8,14 @@ import FolderDocumentsTable from '@/app/components/folder-documents-table';
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
-  params: { folderId: string };
+interface Props {
+  params: Promise<{ folderId: string }>;
   searchParams: { [key: string]: string | string[] | undefined };
-};
+}
 
 export default async function FolderPage({ params, searchParams }: Props) {
   const user = await requireUser();
-  const { folderId } = params;
+  const { folderId } = await params;
 
   try {
     const folder = await getFolder(folderId, user.id);

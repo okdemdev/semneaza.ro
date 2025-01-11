@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Document from '@/lib/models/Document';
 
-export async function GET(request: Request, { params }: { params: { documentId: string } }) {
+interface RouteParams {
+  params: Promise<{ documentId: string }>;
+}
+
+export async function GET(request: Request, { params }: RouteParams) {
   try {
+    const { documentId } = await params;
     await dbConnect();
-    const documentId = params.documentId;
 
     const document = await Document.findOne({ id: documentId });
 

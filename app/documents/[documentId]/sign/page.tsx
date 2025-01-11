@@ -4,6 +4,10 @@ import { notFound } from 'next/navigation';
 import dbConnect from '@/lib/db';
 import Document from '@/lib/models/Document';
 
+interface PageProps {
+  params: Promise<{ documentId: string }>;
+}
+
 async function getDocument(documentId: string) {
   await dbConnect();
   const document = await Document.findOne({ id: documentId });
@@ -15,8 +19,9 @@ async function getDocument(documentId: string) {
   return document;
 }
 
-export default async function SignDocumentPage({ params }: { params: { documentId: string } }) {
-  await getDocument(params.documentId); // Pre-fetch to ensure document exists
+export default async function SignDocumentPage({ params }: PageProps) {
+  const { documentId } = await params;
+  await getDocument(documentId);
 
   return (
     <Suspense
@@ -29,7 +34,7 @@ export default async function SignDocumentPage({ params }: { params: { documentI
         </div>
       }
     >
-      <SignDocumentClient documentId={params.documentId} />
+      <SignDocumentClient documentId={documentId} />
     </Suspense>
   );
 }
