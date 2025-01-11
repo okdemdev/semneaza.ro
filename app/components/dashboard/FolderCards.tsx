@@ -18,7 +18,7 @@ export default function FolderCards({ folders }: FolderCardsProps) {
         <h2 className="text-xl font-semibold text-gray-900">Cu ce folder lucrezi astăzi?</h2>
         <Link
           href="/dashboard/folders/new"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
         >
           Creează folder
         </Link>

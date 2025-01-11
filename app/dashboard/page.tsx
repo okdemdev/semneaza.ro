@@ -54,13 +54,12 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between bg-white p-6 rounded-lg shadow">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  Bine ai revenit, {user.given_name}!
+                  👋 Bine ai revenit, {user.given_name}!
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">
                   Aici poți vedea toate documentele și activitățile tale recente.
                 </p>
               </div>
-              <div className="text-sm text-gray-500">{user.email}</div>
             </div>
 
             {/* Stats Section */}

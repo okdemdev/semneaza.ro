@@ -3,6 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FolderIcon, HomeIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { LogoutLink } from '@kinde-oss/kinde-auth-nextjs';
+import { UserCircle } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -35,17 +44,33 @@ export default function DashboardNav() {
               );
             })}
           </div>
-          <Link
-            href="/dashboard/settings"
-            className={`${
-              pathname === '/dashboard/settings'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-            } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2`}
-          >
-            <Cog6ToothIcon className="h-5 w-5" />
-            <span>Settings</span>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/dashboard/settings"
+              className={`${
+                pathname === '/dashboard/settings'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2`}
+            >
+              <Cog6ToothIcon className="h-5 w-5" />
+              <span>Settings</span>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
+                  <UserCircle className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <LogoutLink className="w-full">
+                  <DropdownMenuItem className="text-red-600 cursor-pointer">
+                    Deconectare
+                  </DropdownMenuItem>
+                </LogoutLink>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </nav>
