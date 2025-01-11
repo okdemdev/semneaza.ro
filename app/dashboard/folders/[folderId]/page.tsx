@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { getFolder } from '@/app/actions/folderActions';
 import { getDocumentsByFolder } from '@/app/actions/documentActions';
 import { requireUser } from '@/lib/requireUser';
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import FolderDocumentsTable from '@/app/components/folder-documents-table';
 
@@ -30,6 +30,7 @@ export default async function FolderPage({ params, searchParams }: Props) {
       id: folder.id,
       name: folder.name,
       description: folder.description,
+      userId: user.id,
     };
 
     // Serialize the documents data
@@ -58,7 +59,10 @@ export default async function FolderPage({ params, searchParams }: Props) {
             </div>
           </div>
           <Link href={`/dashboard/folders/${folderId}/createDocument`}>
-            <Button className="flex items-center gap-2">Document nou</Button>
+            <Button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600">
+              <Plus className="h-4 w-4" />
+              Document nou
+            </Button>
           </Link>
         </div>
 
