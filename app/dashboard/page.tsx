@@ -56,7 +56,7 @@ export default async function DashboardPage() {
                   👋 Bine ai revenit, {user.given_name}!
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">
-                  Aici poți vedea toate documentele și activitățile tale recente.
+                  Aici poți vedea toate documentele și activitățile tale recente..
                 </p>
               </div>
             </div>
